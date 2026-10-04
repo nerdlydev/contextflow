@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@contextflow/core": ["../../packages/core/src/index.ts"],
+      "@contextflow/config": ["../../packages/config/src/index.ts"],
+      "@contextflow/database": ["../../packages/database/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "tests/**/*"]
+}

@@ -1,0 +1,70 @@
+# Dependencies
+node_modules/
+.yarn/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+out/
+.next/
+*.tsbuildinfo
+
+# Testing & coverage
+coverage/
+.nyc_output/
+
+# TypeScript
+*.js.map
+*.d.ts.map
+
+# Bun
+bun.lockb
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/*.log
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Docker local data
+infra/docker/data/
+infra/docker/.pgdata/
+
+# Logs
+*.log
+logs/
+
+# Runtime files
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache
+.npm
+
+# Optional REPL history
+.node_repl_history
