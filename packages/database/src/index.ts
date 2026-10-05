@@ -1,6 +1,6 @@
+import { config } from "@contextflow/config";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { config } from "@contextflow/config";
 
 /**
  * Raw postgres connection used by Drizzle.

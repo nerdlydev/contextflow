@@ -7,10 +7,13 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "bun run --filter @contextflow/api dev",
+    "dev": "bun --env-file=.env run --filter @contextflow/api dev",
     "build": "bun run --filter '*' build",
-    "test": "bun run --filter '*' test",
-    "test:watch": "bun run --filter '*' test:watch",
+    "test": "bun --env-file=.env run --filter '*' test",
+    "test:watch": "bun --env-file=.env run --filter '*' test:watch",
+    "db:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "db:status": "docker compose -f infra/docker/docker-compose.yml ps",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "format:check": "biome format .",
