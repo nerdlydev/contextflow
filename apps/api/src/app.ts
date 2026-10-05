@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
-import v1Router from "./routes/index.js";
+import apiRouter from "./routes/index.js";
 
 /**
  * The ContextFlow Hono application.
@@ -14,10 +14,10 @@ import v1Router from "./routes/index.js";
 const app = new OpenAPIHono();
 
 // ---------------------------------------------------------------------------
-// API v1 routes
+// API routes
 // ---------------------------------------------------------------------------
 
-app.route("/", v1Router);
+app.route("/", apiRouter);
 
 // ---------------------------------------------------------------------------
 // OpenAPI 3.1 document — single source of truth

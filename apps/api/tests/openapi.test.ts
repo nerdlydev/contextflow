@@ -24,16 +24,29 @@ describe("GET /api/openapi.json", () => {
     expect(body.info.title).toBe("ContextFlow API");
   });
 
-  it("includes /api/v1/health path", async () => {
+  it('has info.version === "0.1.0"', async () => {
     const res = await app.request("/api/openapi.json");
     const body = await res.json();
-    expect(body.paths).toHaveProperty("/api/v1/health");
+    expect(body.info.version).toBe("0.1.0");
   });
 
-  it("documents GET method for /api/v1/health", async () => {
+  it("includes /api/health path", async () => {
     const res = await app.request("/api/openapi.json");
     const body = await res.json();
-    expect(body.paths["/api/v1/health"]).toHaveProperty("get");
+    expect(body.paths).toHaveProperty("/api/health");
+  });
+
+  it("documents GET method for /api/health", async () => {
+    const res = await app.request("/api/openapi.json");
+    const body = await res.json();
+    expect(body.paths["/api/health"]).toHaveProperty("get");
+  });
+
+  it("includes health response schema", async () => {
+    const res = await app.request("/api/openapi.json");
+    const body = await res.json();
+    const schemas = body.components?.schemas ?? {};
+    expect(schemas).toHaveProperty("HealthResponse");
   });
 });
 

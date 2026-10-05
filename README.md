@@ -127,7 +127,7 @@ bun run dev
 ### Verify
 
 ```bash
-curl http://localhost:3000/api/v1/health
+curl http://localhost:3000/api/health
 # → {"status":"ok"}
 ```
 
@@ -162,7 +162,7 @@ ContextFlow uses **OpenAPI 3.1** as its API contract and **Scalar** as its inter
 |---|---|
 | [`/api/docs`](http://localhost:3000/api/docs) | Interactive Scalar API Reference |
 | [`/api/openapi.json`](http://localhost:3000/api/openapi.json) | OpenAPI 3.1 document (JSON) |
-| [`/api/v1/health`](http://localhost:3000/api/v1/health) | Health check |
+| [`/api/health`](http://localhost:3000/api/health) | Health check |
 
 ---
 
