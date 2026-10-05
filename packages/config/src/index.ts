@@ -8,6 +8,15 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().url("DATABASE_URL must be a valid connection URL"),
+
+  // Primary Model Provider: NVIDIA NIM
+  NVIDIA_API_KEY: z.string().optional(),
+  MODEL_NAME: z.string().default("meta/llama-3.2-11b-vision-instruct"),
+  MODEL_URL: z.string().default("https://integrate.api.nvidia.com/v1"),
+
+  // Alternative Provider: OpenAI
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_BASE_URL: z.string().optional(),
 });
 
 /**

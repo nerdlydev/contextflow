@@ -1,4 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { agentsRouter } from "./agents.js";
 import { healthRoute } from "./health.js";
 
 /**
@@ -13,5 +14,7 @@ const apiRouter = new OpenAPIHono();
 apiRouter.openapi(healthRoute, (c) => {
   return c.json({ status: "ok" });
 });
+
+apiRouter.route("/", agentsRouter);
 
 export default apiRouter;
