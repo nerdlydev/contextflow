@@ -55,17 +55,19 @@ Once mature, ContextFlow will provide:
 
 ## Current Stack
 
-| Layer        | Technology         |
-|--------------|--------------------|
-| Runtime      | Bun                |
-| Language     | TypeScript         |
-| API          | Hono               |
-| Database     | PostgreSQL 17      |
-| ORM          | Drizzle ORM        |
-| Validation   | Zod                |
-| Lint/Format  | Biome              |
-| Testing      | Vitest             |
-| Infrastructure | Docker Compose   |
+| Layer          | Technology              |
+|----------------|-------------------------|
+| Runtime        | Bun                     |
+| Language       | TypeScript              |
+| API            | Hono                    |
+| API Contract   | OpenAPI 3.1             |
+| API Docs       | Scalar                  |
+| Validation     | Zod                     |
+| Database       | PostgreSQL 17           |
+| ORM            | Drizzle ORM             |
+| Lint/Format    | Biome                   |
+| Testing        | Vitest                  |
+| Infrastructure | Docker Compose          |
 
 ---
 
@@ -125,7 +127,7 @@ bun run dev
 ### Verify
 
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:3000/api/v1/health
 # → {"status":"ok"}
 ```
 
@@ -152,12 +154,26 @@ docker compose -f infra/docker/docker-compose.yml down
 
 ---
 
+## API Documentation
+
+ContextFlow uses **OpenAPI 3.1** as its API contract and **Scalar** as its interactive API reference. API schemas are defined with Zod and used for both runtime validation and OpenAPI generation.
+
+| Endpoint | Description |
+|---|---|
+| [`/api/docs`](http://localhost:3000/api/docs) | Interactive Scalar API Reference |
+| [`/api/openapi.json`](http://localhost:3000/api/openapi.json) | OpenAPI 3.1 document (JSON) |
+| [`/api/v1/health`](http://localhost:3000/api/v1/health) | Health check |
+
+---
+
 ## Roadmap
 
 ```
 [x] Repository foundation
 [x] Hono API
 [x] PostgreSQL development environment
+[x] OpenAPI 3.1 contract
+[x] Scalar interactive API reference
 
 [ ] First agent
 [ ] Agent registry

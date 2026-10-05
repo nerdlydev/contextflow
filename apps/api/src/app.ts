@@ -1,19 +1,59 @@
-import { Hono } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { Scalar } from "@scalar/hono-api-reference";
+import v1Router from "./routes/index.js";
 
 /**
  * The ContextFlow Hono application.
  *
- * This module exports the app instance so it can be imported
- * directly in tests without requiring a running server.
+ * Uses OpenAPIHono so that all registered routes automatically
+ * contribute to the generated OpenAPI 3.1 document.
+ *
+ * Exported without a running server so tests can call app.request()
+ * directly without binding to a port.
  */
-const app = new Hono();
+const app = new OpenAPIHono();
 
-/**
- * GET /health
- * Liveness check — confirms the API process is running.
- */
-app.get("/health", (c) => {
-  return c.json({ status: "ok" });
+// ---------------------------------------------------------------------------
+// API v1 routes
+// ---------------------------------------------------------------------------
+
+app.route("/", v1Router);
+
+// ---------------------------------------------------------------------------
+// OpenAPI 3.1 document — single source of truth
+// ---------------------------------------------------------------------------
+
+app.doc("/api/openapi.json", {
+  openapi: "3.1.0",
+  info: {
+    title: "ContextFlow API",
+    version: "0.1.0",
+    description: "Application-agnostic AI agent execution and context layer.",
+    license: {
+      name: "MIT",
+    },
+    contact: {
+      name: "Devesh Sharma",
+    },
+  },
+  servers: [
+    {
+      url: "http://localhost:3000",
+      description: "Local development server",
+    },
+  ],
 });
+
+// ---------------------------------------------------------------------------
+// Scalar interactive API reference
+// ---------------------------------------------------------------------------
+
+app.get(
+  "/api/docs",
+  Scalar({
+    url: "/api/openapi.json",
+    pageTitle: "ContextFlow API Reference",
+  }),
+);
 
 export default app;
