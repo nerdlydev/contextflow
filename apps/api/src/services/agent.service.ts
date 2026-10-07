@@ -1,4 +1,5 @@
-import { CONTEXTFLOW_ASSISTANT_ID, contextFlowAssistant } from "../agents/contextflow-assistant.js";
+import { type AgentRegistry, agentRegistry } from "../agents/registry.js";
+import type { ContextFlowAgent, ContextFlowAgentMetadata } from "../agents/types.js";
 
 export type AgentInput = {
   message: string;
@@ -9,28 +10,39 @@ export type AgentResult = {
   text: string;
 };
 
+/**
+ * Service orchestrating agent resolution, discovery, and execution.
+ *
+ * Agnostic to individual agent definitions; delegates resolution and
+ * metadata discovery entirely to the AgentRegistry.
+ */
 export class AgentService {
+  constructor(private readonly registry: AgentRegistry = agentRegistry) {}
+
   /**
-   * Resolves an agent by its identifier.
-   * In Lego Block 01, resolution is statically mapped to the contextflow-assistant.
+   * Discovers and lists metadata for all registered agents.
    */
-  resolveAgent(agentId: string) {
-    if (agentId === CONTEXTFLOW_ASSISTANT_ID) {
-      return contextFlowAssistant;
-    }
-    return null;
+  listAgents(): ContextFlowAgentMetadata[] {
+    return this.registry.listMetadata();
+  }
+
+  /**
+   * Resolves a registered agent by ID via the registry.
+   */
+  resolveAgent(agentId: string): ContextFlowAgent | undefined {
+    return this.registry.resolve(agentId);
   }
 
   /**
    * Executes the resolved agent with user input and returns normalized output.
    */
   async runAgent(agentId: string, input: AgentInput): Promise<AgentResult | null> {
-    const agent = this.resolveAgent(agentId);
-    if (!agent) {
+    const contextFlowAgent = this.resolveAgent(agentId);
+    if (!contextFlowAgent) {
       return null;
     }
 
-    const output = await agent.generate(input.message);
+    const output = await contextFlowAgent.agent.generate(input.message);
 
     return {
       agentId,

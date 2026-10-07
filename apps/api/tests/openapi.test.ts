@@ -57,6 +57,26 @@ describe("GET /api/openapi.json", () => {
     expect(schemas).toHaveProperty("HealthResponse");
   });
 
+  it("includes /api/agents path", async () => {
+    const res = await app.request("/api/openapi.json");
+    const body = await res.json();
+    expect(body.paths).toHaveProperty("/api/agents");
+  });
+
+  it("documents GET method for /api/agents", async () => {
+    const res = await app.request("/api/openapi.json");
+    const body = await res.json();
+    expect(body.paths["/api/agents"]).toHaveProperty("get");
+  });
+
+  it("includes ListAgentsResponse and AgentMetadata schemas", async () => {
+    const res = await app.request("/api/openapi.json");
+    const body = await res.json();
+    const schemas = body.components?.schemas ?? {};
+    expect(schemas).toHaveProperty("ListAgentsResponse");
+    expect(schemas).toHaveProperty("AgentMetadata");
+  });
+
   it("includes /api/agents/{agentId}/run path", async () => {
     const res = await app.request("/api/openapi.json");
     const body = await res.json();

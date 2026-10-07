@@ -2,6 +2,37 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { agentService } from "../services/agent.service.js";
 
 /**
+ * Public agent metadata schema.
+ */
+export const AgentMetadataSchema = z
+  .object({
+    id: z.string().openapi({
+      example: "contextflow-assistant",
+      description: "The unique identifier of the agent",
+    }),
+    name: z.string().openapi({
+      example: "ContextFlow Assistant",
+      description: "Human-readable display name of the agent",
+    }),
+    description: z.string().openapi({
+      example: "General development assistant for ContextFlow architecture and operations.",
+      description: "Summary of the agent's role and capabilities",
+    }),
+  })
+  .openapi("AgentMetadata");
+
+/**
+ * Response schema for GET /api/agents
+ */
+export const ListAgentsResponseSchema = z
+  .object({
+    agents: z.array(AgentMetadataSchema).openapi({
+      description: "List of registered agents in the ContextFlow catalog",
+    }),
+  })
+  .openapi("ListAgentsResponse");
+
+/**
  * Path parameter schema for /api/agents/{agentId}/run
  */
 export const RunAgentParamsSchema = z.object({
@@ -54,6 +85,28 @@ export const ErrorResponseSchema = z
     }),
   })
   .openapi("ErrorResponse");
+
+/**
+ * GET /api/agents
+ * Discovers and lists metadata for all registered agents.
+ */
+export const listAgentsRoute = createRoute({
+  method: "get",
+  path: "/api/agents",
+  tags: ["Agents"],
+  summary: "List registered agents",
+  description: "Discovers and lists public metadata for all agents registered in ContextFlow.",
+  responses: {
+    200: {
+      description: "List of registered agents retrieved successfully",
+      content: {
+        "application/json": {
+          schema: ListAgentsResponseSchema,
+        },
+      },
+    },
+  },
+});
 
 /**
  * POST /api/agents/{agentId}/run
@@ -114,11 +167,18 @@ export const runAgentRoute = createRoute({
 
 export const agentsRouter = new OpenAPIHono();
 
+// GET /api/agents
+agentsRouter.openapi(listAgentsRoute, (c) => {
+  const agents = agentService.listAgents();
+  return c.json({ agents }, 200);
+});
+
+// POST /api/agents/{agentId}/run
 agentsRouter.openapi(runAgentRoute, async (c) => {
   const { agentId } = c.req.valid("param");
   const { message } = c.req.valid("json");
 
-  // Unknown agent check
+  // Unknown agent check via registry
   const agent = agentService.resolveAgent(agentId);
   if (!agent) {
     return c.json({ error: `Agent '${agentId}' not found` }, 404);

@@ -1,28 +1,24 @@
 import { Agent } from "@mastra/core/agent";
+import type { ContextFlowAgent } from "./types.js";
 
 export const CONTEXTFLOW_ASSISTANT_ID = "contextflow-assistant";
+export const CONTEXTFLOW_ASSISTANT_NAME = "ContextFlow Assistant";
+export const CONTEXTFLOW_ASSISTANT_DESCRIPTION =
+  "General development assistant for ContextFlow architecture and operations.";
 
 export const CONTEXTFLOW_ASSISTANT_INSTRUCTIONS =
-  "You are ContextFlow's development assistant. Answer clearly and concisely. You are currently running as the first experimental agent in ContextFlow.";
+  "You are ContextFlow's development assistant. Answer clearly and concisely. You are currently running as an experimental agent in ContextFlow.";
 
 type AgentConstructorModel = NonNullable<ConstructorParameters<typeof Agent>[0]>["model"];
 
 /**
- * Factory function to create the ContextFlow Assistant Mastra agent.
- *
- * Configured by default for NVIDIA NIM:
- * ContextFlow → Hono → AgentService → Mastra Agent → NVIDIA NIM → NVIDIA-hosted model
- *
- * Supports:
- * 1. Explicit model override (e.g. for testing)
- * 2. NVIDIA NIM via NVIDIA_API_KEY (default: https://integrate.api.nvidia.com/v1 + meta/llama-3.2-11b-vision-instruct)
- * 3. OpenAI or any other provider via MODEL_NAME and OPENAI_API_KEY
+ * Creates the underlying Mastra Agent runtime instance for contextflow-assistant.
  */
-export function createContextFlowAssistant(modelOverride?: AgentConstructorModel) {
+export function createMastraAssistantAgent(modelOverride?: AgentConstructorModel): Agent {
   if (modelOverride) {
     return new Agent({
       id: CONTEXTFLOW_ASSISTANT_ID,
-      name: "ContextFlow Assistant",
+      name: CONTEXTFLOW_ASSISTANT_NAME,
       instructions: CONTEXTFLOW_ASSISTANT_INSTRUCTIONS,
       model: modelOverride,
     });
@@ -37,7 +33,7 @@ export function createContextFlowAssistant(modelOverride?: AgentConstructorModel
   if (rawModel.startsWith("openai/") && !process.env.NVIDIA_API_KEY && !process.env.MODEL_URL) {
     return new Agent({
       id: CONTEXTFLOW_ASSISTANT_ID,
-      name: "ContextFlow Assistant",
+      name: CONTEXTFLOW_ASSISTANT_NAME,
       instructions: CONTEXTFLOW_ASSISTANT_INSTRUCTIONS,
       model: rawModel as `${string}/${string}`,
     });
@@ -50,7 +46,7 @@ export function createContextFlowAssistant(modelOverride?: AgentConstructorModel
 
   return new Agent({
     id: CONTEXTFLOW_ASSISTANT_ID,
-    name: "ContextFlow Assistant",
+    name: CONTEXTFLOW_ASSISTANT_NAME,
     instructions: CONTEXTFLOW_ASSISTANT_INSTRUCTIONS,
     model: {
       url,
@@ -61,6 +57,20 @@ export function createContextFlowAssistant(modelOverride?: AgentConstructorModel
 }
 
 /**
- * Default instance of the first ContextFlow agent.
+ * Factory function to create the ContextFlow Assistant definition.
  */
-export const contextFlowAssistant = createContextFlowAssistant();
+export function createContextFlowAssistant(
+  modelOverride?: AgentConstructorModel,
+): ContextFlowAgent {
+  return {
+    id: CONTEXTFLOW_ASSISTANT_ID,
+    name: CONTEXTFLOW_ASSISTANT_NAME,
+    description: CONTEXTFLOW_ASSISTANT_DESCRIPTION,
+    agent: createMastraAssistantAgent(modelOverride),
+  };
+}
+
+/**
+ * Default singleton instance of the ContextFlow Assistant agent.
+ */
+export const contextFlowAssistant: ContextFlowAgent = createContextFlowAssistant();
