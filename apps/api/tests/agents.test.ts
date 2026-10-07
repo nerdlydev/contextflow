@@ -10,6 +10,19 @@ describe("Agents API", () => {
     vi.restoreAllMocks();
   });
 
+  describe("Agent Tool Configuration", () => {
+    it("contextflow-assistant has get_current_time and calculate tools attached", async () => {
+      const tools = await contextFlowAssistant.agent.listTools();
+      expect(tools).toHaveProperty("get_current_time");
+      expect(tools).toHaveProperty("calculate");
+    });
+
+    it("knowledge-assistant does not have tools attached (selective assignment)", async () => {
+      const tools = await knowledgeAssistant.agent.listTools();
+      expect(Object.keys(tools)).toHaveLength(0);
+    });
+  });
+
   describe("GET /api/agents", () => {
     it("returns HTTP 200 and lists metadata for all registered agents", async () => {
       const res = await app.request("/api/agents");
@@ -61,6 +74,29 @@ describe("Agents API", () => {
 
         expect(mockGenerate).toHaveBeenCalledTimes(1);
         expect(mockGenerate).toHaveBeenCalledWith("Hello");
+      });
+
+      it("executes contextflow-assistant with tool response", async () => {
+        const mockGenerate = vi
+          .spyOn(contextFlowAssistant.agent, "generate")
+          .mockResolvedValueOnce({
+            text: "The current server time is 2026-10-07T12:00:00.000Z.",
+          } as unknown as GenerateReturn);
+
+        const res = await app.request("/api/agents/contextflow-assistant/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: "What is the current server time?" }),
+        });
+
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body).toEqual({
+          agentId: "contextflow-assistant",
+          text: "The current server time is 2026-10-07T12:00:00.000Z.",
+        });
+
+        expect(mockGenerate).toHaveBeenCalledWith("What is the current server time?");
       });
 
       it("executes knowledge-assistant and returns 200 with normalized response", async () => {

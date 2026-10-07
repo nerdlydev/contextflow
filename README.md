@@ -44,8 +44,8 @@ Once mature, ContextFlow will provide:
                       │
                  Drizzle ORM
 
-        Future AI capabilities:
-        Agents / RAG / MCP / Memory
+        AI Capabilities:
+        Agents / Tools / RAG / MCP / Memory
 ```
 
 ---
@@ -75,7 +75,7 @@ Once mature, ContextFlow will provide:
 ```
 contextflow/
 ├── apps/
-│   └── api/              # Hono HTTP API & Mastra Agent integration
+│   └── api/              # Hono HTTP API, Mastra Agent & Tool integration
 │
 ├── packages/
 │   ├── core/             # Domain abstractions
@@ -166,12 +166,12 @@ docker compose -f infra/docker/docker-compose.yml down
 ContextFlow uses **OpenAPI 3.1** as its API contract and **Scalar** as its interactive API reference. API schemas are defined with Zod and used for both runtime validation and OpenAPI generation.
 
 | Endpoint | Description |
-|---|---|
-| [`/api/docs`](http://localhost:3000/api/docs) | Interactive Scalar API Reference |
+|---|---|\n| [`/api/docs`](http://localhost:3000/api/docs) | Interactive Scalar API Reference |
 | [`/api/openapi.json`](http://localhost:3000/api/openapi.json) | OpenAPI 3.1 document (JSON) |
 | [`/api/health`](http://localhost:3000/api/health) | Health check probe |
 | [`/api/agents`](http://localhost:3000/api/docs#tag/Agents/GET/api/agents) | Discover and list registered agents |
 | [`/api/agents/:agentId/run`](http://localhost:3000/api/docs#tag/Agents/POST/api/agents/{agentId}/run) | Run an agent by ID |
+| [`/api/tools`](http://localhost:3000/api/docs#tag/Tools/GET/api/tools) | Discover and list registered tools |
 
 ---
 
@@ -183,7 +183,7 @@ ContextFlow manages agents through an **in-memory Agent Registry**. `AgentServic
 Hono API → AgentRegistry → ContextFlowAgent → Mastra Runtime → NVIDIA NIM
 ```
 
-### 1. Discover Registered Agents
+### Discover Registered Agents
 
 ```bash
 curl http://localhost:3000/api/agents
@@ -193,45 +193,107 @@ Response:
 
 ```json
 {
-  "agents": [
+  \"agents\": [
     {
-      "id": "contextflow-assistant",
-      "name": "ContextFlow Assistant",
-      "description": "General development assistant for ContextFlow architecture and operations."
+      \"id\": \"contextflow-assistant\",
+      \"name\": \"ContextFlow Assistant\",
+      \"description\": \"General development assistant for ContextFlow architecture and operations.\"
     },
     {
-      "id": "knowledge-assistant",
-      "name": "Knowledge Assistant",
-      "description": "Specialized assistant for synthesizing structured knowledge, definitions, and technical concepts."
+      \"id\": \"knowledge-assistant\",
+      \"name\": \"Knowledge Assistant\",
+      \"description\": \"Specialized assistant for synthesizing structured knowledge, definitions, and technical concepts.\"
     }
   ]
 }
 ```
 
-### 2. Execute an Agent
+---
 
-**ContextFlow Assistant:**
+## Tool System
 
-```bash
-curl -X POST http://localhost:3000/api/agents/contextflow-assistant/run \
-  -H "Content-Type: application/json" \
-  -d '{"message":"Explain what ContextFlow is and what problem it solves."}'
+ContextFlow decouples tool definitions and registration from agent implementations and API routes.
+
+```text
+User / HTTP Request
+        │
+   AgentService
+        │
+   ContextFlow Agent
+        │
+   Mastra Agent
+        │
+    LLM (NVIDIA NIM)
+        │
+  (decides to invoke tool)
+        │
+   Tool Registry
+   ├── get_current_time
+   └── calculate
+        │
+  ContextFlow Tool Execution (with ToolExecutionContext & error boundary)
+        │
+   Result returned to LLM
+        │
+   Final Agent Response
 ```
 
-**Knowledge Assistant:**
+### 1. Discover Registered Tools
+
+Tool execution is internal to agent decisions; public discovery is provided via `GET /api/tools`:
 
 ```bash
-curl -X POST http://localhost:3000/api/agents/knowledge-assistant/run \
-  -H "Content-Type: application/json" \
-  -d '{"message":"Define Retrieval-Augmented Generation."}'
+curl http://localhost:3000/api/tools
 ```
 
 Response:
 
 ```json
 {
+  "tools": [
+    {
+      "id": "get_current_time",
+      "name": "Get Current Time",
+      "description": "Returns the current server time in ISO 8601 format."
+    },
+    {
+      "id": "calculate",
+      "name": "Calculate",
+      "description": "Performs a supported arithmetic calculation (add, subtract, multiply, divide)."
+    }
+  ]
+}
+```
+
+### 2. Live Agent Tool Execution
+
+When calling an agent equipped with tools (`contextflow-assistant`):
+
+**Time Query:**
+```bash
+curl -X POST http://localhost:3000/api/agents/contextflow-assistant/run \
+  -H "Content-Type: application/json" \
+  -d '{"message":"What is the current server time? Use the available tool to determine it."}'
+```
+Response:
+```json
+{
   "agentId": "contextflow-assistant",
-  "text": "ContextFlow is an AI-powered conversational platform..."
+  "text": "The current server time is 2026-10-07T17:26:44.771Z."
+}
+```
+
+**Calculation:**
+```bash
+curl -X POST http://localhost:3000/api/agents/contextflow-assistant/run \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Calculate 37 multiplied by 19 using the available calculation tool."}'
+```
+Response:
+```json
+{
+  "agentId": "contextflow-assistant",
+  "text": "The result of the calculation 37 multiplied by 19 is 703."
 }
 ```
 
@@ -247,8 +309,8 @@ Response:
 [x] Scalar interactive API reference
 [x] First agent (Mastra + NVIDIA NIM)
 [x] Agent registry (In-memory multi-agent resolution)
+[x] Tool system (In-memory registry, semantic IDs, Mastra execution)
 
-[ ] Tool system
 [ ] Reference application
 [ ] Application context
 [ ] RAG
