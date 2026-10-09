@@ -1,8 +1,7 @@
 import type { Agent } from "@mastra/core/agent";
 
 /**
- * Public agent metadata exposed over the ContextFlow API.
- * Never leaks Mastra internals, model keys, or runtime objects.
+ * Public agent metadata exposed over the ContextFlow API.\n * Never leaks Mastra internals, model keys, or runtime objects.
  */
 export type ContextFlowAgentMetadata = {
   id: string;
@@ -20,4 +19,5 @@ export type ContextFlowAgentMetadata = {
  */
 export type ContextFlowAgent = ContextFlowAgentMetadata & {
   agent: Agent;
+  supportedResourceTypes?: string[];
 };

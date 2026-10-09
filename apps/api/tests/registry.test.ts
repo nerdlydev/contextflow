@@ -63,11 +63,12 @@ describe("AgentRegistry", () => {
     }
   });
 
-  it("createDefaultAgentRegistry pre-registers both initial agents", () => {
+  it("createDefaultAgentRegistry pre-registers initial agents including crm-assistant", () => {
     const defaultRegistry = createDefaultAgentRegistry();
 
     expect(defaultRegistry.resolve("contextflow-assistant")).toBeDefined();
     expect(defaultRegistry.resolve("knowledge-assistant")).toBeDefined();
-    expect(defaultRegistry.listMetadata()).toHaveLength(2);
+    expect(defaultRegistry.resolve("crm-assistant")).toBeDefined();
+    expect(defaultRegistry.listMetadata()).toHaveLength(3);
   });
 });

@@ -1,5 +1,8 @@
 import { calculateTool } from "./calculate.js";
+import { createTaskTool } from "./create-task.js";
 import { getCurrentTimeTool } from "./get-current-time.js";
+import { getCustomerTool } from "./get-customer.js";
+import { listCustomerDealsTool } from "./list-customer-deals.js";
 import type { ContextFlowTool, ToolMetadata } from "./types.js";
 
 /**
@@ -49,6 +52,9 @@ export function createDefaultToolRegistry(): ToolRegistry {
   const registry = new ToolRegistry();
   registry.register(getCurrentTimeTool);
   registry.register(calculateTool);
+  registry.register(getCustomerTool);
+  registry.register(listCustomerDealsTool);
+  registry.register(createTaskTool);
   return registry;
 }
 

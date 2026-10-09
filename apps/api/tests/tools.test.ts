@@ -108,11 +108,14 @@ describe("Tool System", () => {
       }
     });
 
-    it("createDefaultToolRegistry pre-registers both default tools", () => {
+    it("createDefaultToolRegistry pre-registers all default tools", () => {
       const defaultRegistry = createDefaultToolRegistry();
       expect(defaultRegistry.resolve("get_current_time")).toBeDefined();
       expect(defaultRegistry.resolve("calculate")).toBeDefined();
-      expect(defaultRegistry.listMetadata()).toHaveLength(2);
+      expect(defaultRegistry.resolve("get_customer")).toBeDefined();
+      expect(defaultRegistry.resolve("list_customer_deals")).toBeDefined();
+      expect(defaultRegistry.resolve("create_task")).toBeDefined();
+      expect(defaultRegistry.listMetadata()).toHaveLength(5);
     });
   });
 
@@ -124,20 +127,15 @@ describe("Tool System", () => {
       const body = await res.json();
       expect(body).toHaveProperty("tools");
       expect(Array.isArray(body.tools)).toBe(true);
-      expect(body.tools).toHaveLength(2);
+      expect(body.tools).toHaveLength(5);
 
-      expect(body.tools).toEqual([
-        {
-          id: "get_current_time",
-          name: "Get Current Time",
-          description: "Returns the current server time in ISO 8601 format.",
-        },
-        {
-          id: "calculate",
-          name: "Calculate",
-          description:
-            "Performs a supported arithmetic calculation (add, subtract, multiply, divide).",
-        },
+      const toolIds = body.tools.map((t: { id: string }) => t.id);
+      expect(toolIds).toEqual([
+        "get_current_time",
+        "calculate",
+        "get_customer",
+        "list_customer_deals",
+        "create_task",
       ]);
     });
   });

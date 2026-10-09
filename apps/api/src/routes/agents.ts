@@ -1,4 +1,9 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import {
+  AgentContextNotSupportedError,
+  ResourceNotFoundError,
+  UnsupportedResourceTypeError,
+} from "../context/index.js";
 import { agentService } from "../services/agent.service.js";
 
 /**
@@ -47,6 +52,22 @@ export const RunAgentParamsSchema = z.object({
 });
 
 /**
+ * Schema for an optional domain resource reference.
+ */
+export const ResourceReferenceSchema = z
+  .object({
+    type: z.string().min(1).openapi({
+      example: "customer",
+      description: "The domain resource type (e.g. customer)",
+    }),
+    id: z.string().min(1).openapi({
+      example: "customer_001",
+      description: "The unique identifier of the requested resource",
+    }),
+  })
+  .openapi("ResourceReference");
+
+/**
  * Request body schema for executing an agent.
  */
 export const RunAgentRequestSchema = z
@@ -54,6 +75,9 @@ export const RunAgentRequestSchema = z
     message: z.string().min(1, "Message must not be empty").openapi({
       example: "What is ContextFlow?",
       description: "User message or prompt for the agent",
+    }),
+    resource: ResourceReferenceSchema.optional().openapi({
+      description: "Optional domain resource reference for application context resolution",
     }),
   })
   .openapi("RunAgentRequest");
@@ -110,7 +134,7 @@ export const listAgentsRoute = createRoute({
 
 /**
  * POST /api/agents/{agentId}/run
- * Executes a specified agent with the provided user message.
+ * Executes a specified agent with the provided user message and optional resource context.
  */
 export const runAgentRoute = createRoute({
   method: "post",
@@ -139,7 +163,8 @@ export const runAgentRoute = createRoute({
       },
     },
     400: {
-      description: "Validation error — invalid request body or path parameter",
+      description:
+        "Validation error — invalid request body, path parameter, or unsupported resource type",
       content: {
         "application/json": {
           schema: ErrorResponseSchema,
@@ -147,7 +172,7 @@ export const runAgentRoute = createRoute({
       },
     },
     404: {
-      description: "Agent not found",
+      description: "Agent or requested resource not found",
       content: {
         "application/json": {
           schema: ErrorResponseSchema,
@@ -176,7 +201,7 @@ agentsRouter.openapi(listAgentsRoute, (c) => {
 // POST /api/agents/{agentId}/run
 agentsRouter.openapi(runAgentRoute, async (c) => {
   const { agentId } = c.req.valid("param");
-  const { message } = c.req.valid("json");
+  const { message, resource } = c.req.valid("json");
 
   // Unknown agent check via registry
   const agent = agentService.resolveAgent(agentId);
@@ -186,15 +211,26 @@ agentsRouter.openapi(runAgentRoute, async (c) => {
 
   // Execute agent with error boundary
   try {
-    const result = await agentService.runAgent(agentId, { message });
+    const result = await agentService.runAgent(agentId, { message, resource });
     if (!result) {
       return c.json({ error: `Agent '${agentId}' not found` }, 404);
     }
     return c.json(result, 200);
   } catch (error) {
+    if (error instanceof ResourceNotFoundError) {
+      return c.json({ error: error.message }, 404);
+    }
+    if (
+      error instanceof UnsupportedResourceTypeError ||
+      error instanceof AgentContextNotSupportedError
+    ) {
+      return c.json({ error: error.message }, 400);
+    }
     console.error(`[AgentsRoute] Execution failed for agent '${agentId}':`, error);
     return c.json(
-      { error: "Agent execution failed due to an underlying model provider error." },
+      {
+        error: "Agent execution failed due to an underlying model provider error.",
+      },
       500,
     );
   }

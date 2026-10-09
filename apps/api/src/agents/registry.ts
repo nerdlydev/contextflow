@@ -1,4 +1,5 @@
 import { contextFlowAssistant } from "./contextflow-assistant.js";
+import { crmAssistant } from "./crm-assistant.js";
 import { knowledgeAssistant } from "./knowledge-assistant.js";
 import type { ContextFlowAgent, ContextFlowAgentMetadata } from "./types.js";
 
@@ -49,6 +50,7 @@ export function createDefaultAgentRegistry(): AgentRegistry {
   const registry = new AgentRegistry();
   registry.register(contextFlowAssistant);
   registry.register(knowledgeAssistant);
+  registry.register(crmAssistant);
   return registry;
 }
 

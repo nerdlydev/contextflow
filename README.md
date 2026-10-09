@@ -45,7 +45,7 @@ Once mature, ContextFlow will provide:
                  Drizzle ORM
 
         AI Capabilities:
-        Agents / Tools / RAG / MCP / Memory
+        Agents / Tools / Context / RAG / MCP / Memory
 ```
 
 ---
@@ -75,7 +75,7 @@ Once mature, ContextFlow will provide:
 ```
 contextflow/
 ├── apps/
-│   └── api/              # Hono HTTP API, Mastra Agent & Tool integration
+│   └── api/              # Hono HTTP API, Mastra Agent, Tool & Context integration
 │
 ├── packages/
 │   ├── core/             # Domain abstractions
@@ -166,11 +166,12 @@ docker compose -f infra/docker/docker-compose.yml down
 ContextFlow uses **OpenAPI 3.1** as its API contract and **Scalar** as its interactive API reference. API schemas are defined with Zod and used for both runtime validation and OpenAPI generation.
 
 | Endpoint | Description |
-|---|---|\n| [`/api/docs`](http://localhost:3000/api/docs) | Interactive Scalar API Reference |
+|---|---|
+| [`/api/docs`](http://localhost:3000/api/docs) | Interactive Scalar API Reference |
 | [`/api/openapi.json`](http://localhost:3000/api/openapi.json) | OpenAPI 3.1 document (JSON) |
 | [`/api/health`](http://localhost:3000/api/health) | Health check probe |
 | [`/api/agents`](http://localhost:3000/api/docs#tag/Agents/GET/api/agents) | Discover and list registered agents |
-| [`/api/agents/:agentId/run`](http://localhost:3000/api/docs#tag/Agents/POST/api/agents/{agentId}/run) | Run an agent by ID |
+| [`/api/agents/:agentId/run`](http://localhost:3000/api/docs#tag/Agents/POST/api/agents/{agentId}/run) | Run an agent by ID (optional resource reference) |
 | [`/api/tools`](http://localhost:3000/api/docs#tag/Tools/GET/api/tools) | Discover and list registered tools |
 
 ---
@@ -193,16 +194,21 @@ Response:
 
 ```json
 {
-  \"agents\": [
+  "agents": [
     {
-      \"id\": \"contextflow-assistant\",
-      \"name\": \"ContextFlow Assistant\",
-      \"description\": \"General development assistant for ContextFlow architecture and operations.\"
+      "id": "contextflow-assistant",
+      "name": "ContextFlow Assistant",
+      "description": "General development assistant for ContextFlow architecture and operations."
     },
     {
-      \"id\": \"knowledge-assistant\",
-      \"name\": \"Knowledge Assistant\",
-      \"description\": \"Specialized assistant for synthesizing structured knowledge, definitions, and technical concepts.\"
+      "id": "knowledge-assistant",
+      "name": "Knowledge Assistant",
+      "description": "Specialized assistant for synthesizing structured knowledge, definitions, and technical concepts."
+    },
+    {
+      "id": "crm-assistant",
+      "name": "CRM Assistant",
+      "description": "Specialized assistant for managing customer relationships, deals, and tasks in the reference CRM."
     }
   ]
 }
@@ -229,7 +235,10 @@ User / HTTP Request
         │
    Tool Registry
    ├── get_current_time
-   └── calculate
+   ├── calculate
+   ├── get_customer
+   ├── list_customer_deals
+   └── create_task
         │
   ContextFlow Tool Execution (with ToolExecutionContext & error boundary)
         │
@@ -246,56 +255,59 @@ Tool execution is internal to agent decisions; public discovery is provided via 
 curl http://localhost:3000/api/tools
 ```
 
-Response:
+---
 
-```json
-{
-  "tools": [
-    {
-      "id": "get_current_time",
-      "name": "Get Current Time",
-      "description": "Returns the current server time in ISO 8601 format."
-    },
-    {
-      "id": "calculate",
-      "name": "Calculate",
-      "description": "Performs a supported arithmetic calculation (add, subtract, multiply, divide)."
+## Reference Application & Adapter
+
+ContextFlow maintains strict domain agnosticism by mediating all host application operations through an **Application Adapter**.
+
+```text
+crm-assistant → CRM Tools → ReferenceApplicationAdapter → ReferenceCrmService → Backing Store
+```
+
+- **Customer Operations:** `get_customer`
+- **Deal Operations:** `list_customer_deals`
+- **Task Operations:** `create_task`
+
+See [docs/architecture/application-adapter.md](./docs/architecture/application-adapter.md) for full architectural specifications, security guarantees, and adapter contracts.
+
+---
+
+## Application Context
+
+ContextFlow's **Application Context** pipeline resolves minimal, relevant domain data through trusted adapters *before* an agent's first model invocation. This grounds the agent without requiring users to repeat entity IDs or allowing models to guess resources.
+
+```text
+POST /api/agents/crm-assistant/run (with resource reference)
+                    │
+                    ▼
+          ContextService & CrmContextProvider
+                    │
+                    ▼
+          ReferenceApplicationAdapter
+                    │
+                    ▼
+          Formatted Read-Only Context Block Prepended to Prompt
+                    │
+                    ▼
+          Mastra Agent Runtime (NVIDIA NIM)
+```
+
+### Run Agent with Application Context
+
+```bash
+curl -X POST http://localhost:3000/api/agents/crm-assistant/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Help me prepare a proposal for the current customer.",
+    "resource": {
+      "type": "customer",
+      "id": "customer_001"
     }
-  ]
-}
+  }'
 ```
 
-### 2. Live Agent Tool Execution
-
-When calling an agent equipped with tools (`contextflow-assistant`):
-
-**Time Query:**
-```bash
-curl -X POST http://localhost:3000/api/agents/contextflow-assistant/run \
-  -H "Content-Type: application/json" \
-  -d '{"message":"What is the current server time? Use the available tool to determine it."}'
-```
-Response:
-```json
-{
-  "agentId": "contextflow-assistant",
-  "text": "The current server time is 2026-10-07T17:26:44.771Z."
-}
-```
-
-**Calculation:**
-```bash
-curl -X POST http://localhost:3000/api/agents/contextflow-assistant/run \
-  -H "Content-Type: application/json" \
-  -d '{"message":"Calculate 37 multiplied by 19 using the available calculation tool."}'
-```
-Response:
-```json
-{
-  "agentId": "contextflow-assistant",
-  "text": "The result of the calculation 37 multiplied by 19 is 703."
-}
-```
+See [docs/architecture/application-context.md](./docs/architecture/application-context.md) for details on context lifecycle, security invariants, and failure handling.
 
 ---
 
@@ -310,9 +322,9 @@ Response:
 [x] First agent (Mastra + NVIDIA NIM)
 [x] Agent registry (In-memory multi-agent resolution)
 [x] Tool system (In-memory registry, semantic IDs, Mastra execution)
+[x] Reference application (Mock CRM domain & ApplicationAdapter)
+[x] Application context (Dynamic context injection via adapter)
 
-[ ] Reference application
-[ ] Application context
 [ ] RAG
 [ ] Reranking
 [ ] Memory
